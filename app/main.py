@@ -1,6 +1,6 @@
 import logging
 import os
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -41,13 +41,13 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
-# Simple request logger to verify requests reach the app
+# Request logger middleware
 class SimpleLoggerMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(self, request, call_next):
         origin = request.headers.get('origin', 'none')
         logger.info(f"[REQUEST] {request.method} {request.url.path} | Origin: {origin}")
         response = await call_next(request)
-        logger.info(f"[RESPONSE] {request.method} {request.url.path} | Status: {response.status_code} | Origin: {origin}")
+        logger.info(f"[RESPONSE] {request.method} {request.url.path} | Status: {response.status_code}")
         return response
 
 app.add_middleware(SimpleLoggerMiddleware)
@@ -55,8 +55,8 @@ app.add_middleware(SimpleLoggerMiddleware)
 # Force CORS headers on all responses
 # This runs AFTER CORS middleware to ensure headers are always present
 @app.middleware("http")
-async def force_cors_headers(request: Request, call_next):
-    """Force CORS headers on all responses to ensure they're always present"""
+async def force_cors_headers(request, call_next):
+    """Force CORS headers on all responses"""
     response = await call_next(request)
     origin = request.headers.get("origin")
     
@@ -72,13 +72,10 @@ async def force_cors_headers(request: Request, call_next):
 # Global OPTIONS handler for preflight requests
 # Must be defined BEFORE routers to catch all OPTIONS requests
 @app.options("/{full_path:path}")
-async def global_options_handler(request: Request, full_path: str):
-    """Global OPTIONS handler for preflight requests - handles CORS properly"""
+async def global_options_handler(request, full_path: str):
+    """Global OPTIONS handler for preflight requests"""
     origin = request.headers.get("origin")
     requested_headers = request.headers.get("access-control-request-headers", "")
-    requested_method = request.headers.get("access-control-request-method", "")
-    
-    logger.info(f"[OPTIONS] Global handler for path: {full_path} | Origin: {origin} | Requested headers: {requested_headers} | Requested method: {requested_method}")
     
     # Return response with explicit CORS headers
     if origin and origin in origins:

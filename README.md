@@ -5,7 +5,7 @@ FastAPI backend for the SignalScope application - network coverage and signal qu
 ## Setup
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.12+
 - pip
 - MongoDB (or MongoDB Atlas)
 
@@ -73,11 +73,10 @@ backend/
 │       ├── __init__.py
 │       └── haversine.py  # Distance calculations
 ├── requirements.txt
-├── Procfile             # For Railway/Heroku deployment
-├── railway.toml         # Railway deployment config
-├── railway.nixpacks.toml
+├── Procfile             # For Render/Heroku deployment
+├── render.yaml          # Render deployment config
+├── runtime.txt          # Python version specification
 ├── .gitignore
-├── .railwayignore
 └── README.md
 ```
 
@@ -106,17 +105,24 @@ backend/
 
 ## Testing
 
-Run the test scripts:
-```bash
-python test_register.py
-python test_mongo.py
-```
+The API includes interactive documentation at `/docs` where you can test all endpoints directly.
 
 ## Deployment
 
-### Railway
+### Render.com
 
-This backend is configured for Railway deployment. The `railway.toml` and `railway.nixpacks.toml` files contain the necessary configuration.
+This backend is configured for Render.com deployment. The `render.yaml` file contains the service configuration.
+
+**Quick Deploy:**
+1. Push your code to GitHub
+2. Connect your repository to Render
+3. Set environment variables in Render dashboard:
+   - `DATABASE_URL` - MongoDB connection string
+   - `SECRET_KEY` - JWT secret key
+   - `CORS_ORIGINS` - Comma-separated frontend URLs
+4. Render will automatically deploy using `render.yaml`
+
+**Live URL:** `https://signal-scope-back-end.onrender.com`
 
 ### Other Platforms
 

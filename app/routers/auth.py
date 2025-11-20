@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime
 import os
@@ -12,7 +12,7 @@ from ..auth.utils import (
 )
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
-security = HTTPBearer()
+security = HTTPBearer()  # Reserved for future protected endpoints
 
 # ---------------------------------------------------------
 # OPTIONS HANDLERS - Handle preflight requests without DB dependency
