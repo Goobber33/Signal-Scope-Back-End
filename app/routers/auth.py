@@ -14,6 +14,19 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 security = HTTPBearer()
 
 # ---------------------------------------------------------
+# OPTIONS HANDLERS - Handle preflight requests without DB dependency
+# ---------------------------------------------------------
+@router.options("/register")
+async def options_register():
+    """Handle OPTIONS preflight for /register - no dependencies to avoid 500 errors"""
+    return {}
+
+@router.options("/login")
+async def options_login():
+    """Handle OPTIONS preflight for /login - no dependencies to avoid 500 errors"""
+    return {}
+
+# ---------------------------------------------------------
 # REGISTER
 # ---------------------------------------------------------
 @router.post("/register", response_model=Token)
