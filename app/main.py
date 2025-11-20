@@ -14,8 +14,12 @@ app = FastAPI(title="SignalScope API", version="1.0.0")
 
 # CORS origins - Railway-friendly parsing
 raw_origins = os.getenv("CORS_ORIGINS")
+logger.info(f"[CORS] CORS_ORIGINS env var: {raw_origins}")
+
 if raw_origins:
-    origins = [o.strip() for o in raw_origins.split(",")]
+    # Split by comma, strip whitespace, filter out empty strings
+    origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+    logger.info(f"[CORS] Parsed origins from env: {origins}")
 else:
     # Default origins if CORS_ORIGINS not set
     origins = [
@@ -23,27 +27,30 @@ else:
         "http://localhost:5174",
         "https://signal-scope-psi.vercel.app",
     ]
+    logger.info(f"[CORS] Using default origins: {origins}")
 
-logger.info(f"[CORS] Allowing origins: {origins}")
+logger.info(f"[CORS] Final allowed origins: {origins}")
 
-# Simple request logger to verify requests reach the app
-class SimpleLoggerMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        logger.info(f"[REQUEST] {request.method} {request.url.path} | Origin: {request.headers.get('origin', 'none')}")
-        response = await call_next(request)
-        logger.info(f"[RESPONSE] {request.method} {request.url.path} | Status: {response.status_code}")
-        return response
-
-app.add_middleware(SimpleLoggerMiddleware)
-
-# CORS middleware - MUST be added before routers
+# CORS middleware - MUST be added FIRST, before any other middleware or routers
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
+
+# Simple request logger to verify requests reach the app
+class SimpleLoggerMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get('origin', 'none')
+        logger.info(f"[REQUEST] {request.method} {request.url.path} | Origin: {origin}")
+        response = await call_next(request)
+        logger.info(f"[RESPONSE] {request.method} {request.url.path} | Status: {response.status_code} | Origin: {origin}")
+        return response
+
+app.add_middleware(SimpleLoggerMiddleware)
 
 # DB lifecycle
 @app.on_event("startup")
