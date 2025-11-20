@@ -52,6 +52,30 @@ class SimpleLoggerMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(SimpleLoggerMiddleware)
 
+# Force CORS headers on all responses (Railway-specific fix)
+# This runs AFTER CORS middleware to ensure headers are always present
+@app.middleware("http")
+async def force_cors_headers(request: Request, call_next):
+    """Force CORS headers on all responses to prevent Railway proxy from stripping them"""
+    response = await call_next(request)
+    origin = request.headers.get("origin")
+    
+    if origin and origin in origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+    
+    return response
+
+# Global OPTIONS handler for Railway proxy compatibility
+# Must be defined BEFORE routers to catch all OPTIONS requests
+@app.options("/{full_path:path}")
+async def global_options_handler(full_path: str):
+    """Global OPTIONS handler for preflight requests - Railway-specific fix"""
+    logger.info(f"[OPTIONS] Global handler for path: {full_path}")
+    return {}
+
 # DB lifecycle
 @app.on_event("startup")
 async def startup():
