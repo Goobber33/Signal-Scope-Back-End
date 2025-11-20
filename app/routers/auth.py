@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime
+import os
 
 from ..database import get_database
 from ..schemas import UserCreate, UserLogin, UserResponse, Token
@@ -16,15 +17,54 @@ security = HTTPBearer()
 # ---------------------------------------------------------
 # OPTIONS HANDLERS - Handle preflight requests without DB dependency
 # ---------------------------------------------------------
+def get_allowed_origins():
+    """Get allowed origins from environment or use defaults"""
+    raw_origins = os.getenv("CORS_ORIGINS")
+    if raw_origins:
+        return [o.strip() for o in raw_origins.split(",") if o.strip()]
+    return [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://signal-scope-psi.vercel.app",
+    ]
+
 @router.options("/register")
-async def options_register():
+async def options_register(request: Request):
     """Handle OPTIONS preflight for /register - no dependencies to avoid 500 errors"""
-    return {}
+    origin = request.headers.get("origin")
+    allowed_origins = get_allowed_origins()
+    
+    if origin and origin in allowed_origins:
+        return Response(
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Max-Age": "3600",
+            }
+        )
+    return Response(status_code=200)
 
 @router.options("/login")
-async def options_login():
+async def options_login(request: Request):
     """Handle OPTIONS preflight for /login - no dependencies to avoid 500 errors"""
-    return {}
+    origin = request.headers.get("origin")
+    allowed_origins = get_allowed_origins()
+    
+    if origin and origin in allowed_origins:
+        return Response(
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Max-Age": "3600",
+            }
+        )
+    return Response(status_code=200)
 
 # ---------------------------------------------------------
 # REGISTER

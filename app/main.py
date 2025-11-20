@@ -1,6 +1,6 @@
 import logging
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -71,10 +71,26 @@ async def force_cors_headers(request: Request, call_next):
 # Global OPTIONS handler for Railway proxy compatibility
 # Must be defined BEFORE routers to catch all OPTIONS requests
 @app.options("/{full_path:path}")
-async def global_options_handler(full_path: str):
+async def global_options_handler(request: Request, full_path: str):
     """Global OPTIONS handler for preflight requests - Railway-specific fix"""
-    logger.info(f"[OPTIONS] Global handler for path: {full_path}")
-    return {}
+    origin = request.headers.get("origin")
+    logger.info(f"[OPTIONS] Global handler for path: {full_path} | Origin: {origin}")
+    
+    # Return response with explicit CORS headers
+    if origin and origin in origins:
+        return Response(
+            status_code=200,
+            headers={
+                "Access-Control-Allow-Origin": origin,
+                "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Credentials": "true",
+                "Access-Control-Max-Age": "3600",
+            }
+        )
+    
+    # Return empty response if origin not allowed (CORS middleware will handle it)
+    return Response(status_code=200)
 
 # DB lifecycle
 @app.on_event("startup")
